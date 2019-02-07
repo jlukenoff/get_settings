@@ -13,7 +13,7 @@ const request = require('request');
 const shell = require('shelljs');
 
 // get cli args
-const moniker = process.argv[2];
+const [moniker, env] = process.argv.slice(2);
 
 // function to extract retailerSetting from html string
 const getRetailerSettingsFromHtmlString = function(string) {
