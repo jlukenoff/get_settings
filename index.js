@@ -28,6 +28,11 @@ const getRetailerSettingsFromHtmlString = function(string) {
     .slice(0, -1);
 };
 
+const getStyles = function(url) {
+  // request css from url
+  // write to file
+};
+
 const getDomain = function(env) {
   const domains = [
     'http://narvar.com/tracking',
@@ -44,12 +49,16 @@ const getDomain = function(env) {
   }
 };
 
+const date = new Date();
+date.setHours(date.getHours() - 8);
+
 // render path to new settings file
-const path = `/Users/johnlukenoff/Desktop/Projects/${moniker}/config/RetailerSetting_${new Date()
+const path = `/Users/johnlukenoff/Desktop/Projects/${moniker}/config/RetailerSetting_${date
   .toUTCString()
   .replace(/[\s,:"GM"]/g, '')
   .slice(0, -1)}${!env || env.startsWith('prod') ? '' : '-' + env}.json`;
 
+// TODO: nest file in directories based on any non-standard locales and or attributes
 // make dirs
 shell.mkdir('-p', `/Users/johnlukenoff/Desktop/Projects/${moniker}/config`);
 
@@ -64,6 +73,12 @@ request(
     if (err) console.error(err);
     // extract retailerSetting from html string
     const json = getRetailerSettingsFromHtmlString(body.toString());
+    // TODO: add try/catch in case json did not exist in html string, handle failure response in catch
+    const settings = JSON.parse(json);
+    if (settings.custom) {
+      const cssUrl = settings.custom.css_url;
+      console.log('cssUrl:', cssUrl);
+    }
     console.log('Writing File...');
     // write file
     fs.writeFile(path, json, err => {
