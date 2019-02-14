@@ -5,12 +5,47 @@
  * O: write a json file with RetailerSetting_<datestring>.json of current prod retailerSettings
  * C: Parsing retailerSetting from html string
  * E:
+ *
+ * Pseudo-code:
+ *
+ * get cli args
+ * create directories
+ *  create config directory
+ *  create styles directory
+ * if a config exists in dir
+ *  mv config and rename to prev
+ * make request for track page
+ *  parse json and extract css_url if exists
+ *  get css
+ *    rename existing to prev
+ *    write to styles directory
+ *  write json config to file
+ *  commit changes
  */
 
 // Modules
 const fs = require('fs');
 const request = require('request');
 const shell = require('shelljs');
+
+// Config
+const { projectsDir } = require('./config.json');
+
+// create directories
+const makeDirs = function() {
+  //  create config directory
+  //  create styles directory
+  // if a config exists in dir
+  //  mv config and rename to prev
+};
+// make request for track page
+//  parse json and extract css_url if exists
+//  get css
+//    rename existing to prev
+//    write to styles directory
+//  write json config to file
+//  commit changes
+//
 
 // get cli args
 const [moniker, env, locale, params] = process.argv.slice(2);
@@ -30,58 +65,88 @@ const getRetailerSettingsFromHtmlString = function(string) {
 
 const getStyles = function(url) {
   // request css from url
-  // write to file
+  request(url, function(err, res, body) {
+    if (err) console.error(`Error fetching styles`);
+    // write to file
+    fs.writeFile(PATH_TO_STYLES);
+  });
 };
 
-const getDomain = function(env) {
-  const domains = [
-    'http://narvar.com/tracking',
-    'http://tracking-qa01.narvar.qa/tracking',
-    'http://tracking-st01.narvar.qa/tracking',
-  ];
+// declare domain - default prod
+let domain = 'http://narvar.com/tracking';
+let filePath = '/';
 
-  if (!env || env.startsWith('prod')) {
-    return domains[0];
-  } else if (env === 'qa') {
-    return domains[1];
-  } else if (env.startsWith('stag')) {
-    return domains[2];
-  }
-};
+// check for non-prod environment
+if (env && env.startsWith('q')) {
+  domain = 'http://tracking-st01.narvar.com/tracking';
+  filePath += 'qa/';
+} else if (env && env.startsWith('s')) {
+  domain = 'http://tracking-st01.narvar.com/tracking';
+  filePath += 'staging/';
+}
 
-const date = new Date();
-date.setHours(date.getHours() - 8);
+// check for extra params and nest in dirs
+if (params) {
+  //split list of params on &
+  let paramList = params
+    .split('&')
+    // iterate through list, split each value on '=', add split[1] + '/' to filePath
+    .forEach(p => (filePath += p.split('=')[1]) + '/');
+}
 
 // render path to new settings file
-const path = `/Users/johnlukenoff/Desktop/Projects/${moniker}/config/RetailerSetting_${date
-  .toUTCString()
-  .replace(/[\s,:"GM"]/g, '')
-  .slice(0, -1)}${!env || env.startsWith('prod') ? '' : '-' + env}.json`;
 
-// TODO: nest file in directories based on any non-standard locales and or attributes
+// if file is in a non-prod environemnt
+
+// rename most recent to RetailerSetting-prev.json
+shell.mv(
+  `${projectsDir}/${moniker}${filePath}RetailerSetting-current.json`,
+  `${projectsDir}/${moniker}${filePath}RetailerSetting-prev.json`
+);
+
+// nest file in directory by given environment
+// name new file RetailerSetting-current.json
+// write file
+
+// TODO: nest file in directories based on any non-standard locales and/or attributes
 // make dirs
-shell.mkdir('-p', `/Users/johnlukenoff/Desktop/Projects/${moniker}/config`);
+const PATH_TO_FILE = `${projectsDir}/${moniker}${filePath}`;
+const PATH_TO_STYLES =
+  PATH_TO_FILE.slice(0, PATH_TO_FILE.indexOf('/config')) + '/styles';
+// create directories
+shell.mkdir('-p', PATH_TO_FILE);
+// create styles directory
+shell.mkdir('-p', PATH_TO_STYLES);
 
 console.log('Getting retailerSettings...');
 
 // get current track page
 request(
-  `${getDomain(env)}/${moniker}/ups?trackingnumbers=test&locale=${locale ||
-    'en_US'}${params ? '&' + params : ''}`,
+  `${domain}/${moniker}/ups?tracking_numbers=test&locale=${locale || 'en_US'}${
+    params ? '&' + params : ''
+  }`,
   { encoding: null },
   function(err, res, body) {
     if (err) console.error(err);
     // extract retailerSetting from html string
     const json = getRetailerSettingsFromHtmlString(body.toString());
-    // TODO: add try/catch in case json did not exist in html string, handle failure response in catch
-    const settings = JSON.parse(json);
+
+    let settings = {};
+    // try to parse json
+    try {
+      // set settings to parsed json
+      settings = JSON.parse(json);
+    } catch (e) {
+      // if json did not parse, end script
+      console.error(`Error: json not found\nFull error: ${e}`);
+    }
+    // if css url exists, download and write to file
     if (settings.custom) {
       const cssUrl = settings.custom.css_url;
-      console.log('cssUrl:', cssUrl);
     }
     console.log('Writing File...');
     // write file
-    fs.writeFile(path, json, err => {
+    fs.writeFile(PATH_TO_FILE, json, err => {
       if (err) console.error(err);
       console.log('Success:', path);
     });
