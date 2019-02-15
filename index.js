@@ -55,7 +55,7 @@ date.setHours(date.getHours() - 8);
 // render path to new settings file
 const path = `/Users/johnlukenoff/Desktop/Projects/${moniker}/config/RetailerSetting_${date
   .toUTCString()
-  .replace(/[\s,:"GM"]/g, '')
+  .replace(/[\s,]/g, '')
   .slice(0, -1)}${!env || env.startsWith('prod') ? '' : '-' + env}.json`;
 
 // TODO: nest file in directories based on any non-standard locales and or attributes
