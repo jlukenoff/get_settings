@@ -29,15 +29,30 @@ const request = require('request');
 const shell = require('shelljs');
 
 // Config
-const { projectsDir } = require('./config.json');
+const { PREOJECTS_DIR } = require('./config.json');
 
-// create directories
-const makeDirs = function() {
-  //  create config directory
-  //  create styles directory
+// Get CLI Args
+const [moniker, env, locale, params] = process.argv.slice(2);
+
+// render paths
+const RETAILER_DIR = `${projectsDir}/${moniker}`;
+
+const SUB_DIR =
+  !env || env.startsWith('p') ? '' : env.startsWith('q') ? '/qa' : '/staging';
+
+const CONFIG_DIR = `${RETAILER_DIR}${SUB_DIR}/config`;
+const STYLES_DIR = `${RETAILER_DIR}${SUB_DIR}/styles`;
+
+// make directories
+shell.mkdir('-p', CONFIG_DIR, STYLES_DIR);
+
+const renderFiles = function(params, json, done) {
   // if a config exists in dir
-  //  mv config and rename to prev
+  shell.mv(`${CONFIG_DIR}/Ret`);
+  // mv config and rename to prev
+  // write JSON to file
 };
+
 // make request for track page
 //  parse json and extract css_url if exists
 //  get css
@@ -46,9 +61,6 @@ const makeDirs = function() {
 //  write json config to file
 //  commit changes
 //
-
-// get cli args
-const [moniker, env, locale, params] = process.argv.slice(2);
 
 // function to extract retailerSetting from html string
 const getRetailerSettingsFromHtmlString = function(string) {
@@ -110,7 +122,6 @@ shell.mv(
 
 // TODO: nest file in directories based on any non-standard locales and/or attributes
 // make dirs
-const PATH_TO_FILE = `${projectsDir}/${moniker}${filePath}`;
 const PATH_TO_STYLES =
   PATH_TO_FILE.slice(0, PATH_TO_FILE.indexOf('/config')) + '/styles';
 // create directories
