@@ -29,38 +29,45 @@ const request = require('request');
 const shell = require('shelljs');
 
 // Config
-const { PREOJECTS_DIR } = require('./config.json');
+const { PROJECTS_DIR } = require('./config.json');
 
 // Get CLI Args
 const [moniker, env, locale, params] = process.argv.slice(2);
 
 // render paths
-const RETAILER_DIR = `${projectsDir}/${moniker}`;
+const RETAILER_DIR = `${PROJECTS_DIR}/${moniker}`;
 
 const SUB_DIR =
   !env || env.startsWith('p') ? '' : env.startsWith('q') ? '/qa' : '/staging';
 
-const CONFIG_DIR = `${RETAILER_DIR}${SUB_DIR}/config`;
-const STYLES_DIR = `${RETAILER_DIR}${SUB_DIR}/styles`;
+const CONFIG_DIR = `${RETAILER_DIR}/config${SUB_DIR}`;
+const STYLES_DIR = `${RETAILER_DIR}/styles${SUB_DIR}`;
+
+console.log('Making Directories...');
 
 // make directories
-shell.mkdir('-p', CONFIG_DIR, STYLES_DIR);
+shell.mkdir('-p', CONFIG_DIR);
 
-const renderFiles = function(params, json, done) {
-  // if a config exists in dir
-  shell.mv(`${CONFIG_DIR}/Ret`);
+const renderFiles = function(json, done) {
   // mv config and rename to prev
-  // write JSON to file
-};
+  shell.mv(
+    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`,
+    `${CONFIG_DIR}/RetailerSettings-prev${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`
+  );
 
-// make request for track page
-//  parse json and extract css_url if exists
-//  get css
-//    rename existing to prev
-//    write to styles directory
-//  write json config to file
-//  commit changes
-//
+  // write JSON to file
+  fs.writeFile(
+    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`,
+    json,
+    done
+  );
+};
 
 // function to extract retailerSetting from html string
 const getRetailerSettingsFromHtmlString = function(string) {
@@ -75,91 +82,94 @@ const getRetailerSettingsFromHtmlString = function(string) {
     .slice(0, -1);
 };
 
-const getStyles = function(url) {
+const getStyles = function(url, done) {
+  console.log('Getting Styles...');
+
+  shell.mkdir('-p', STYLES_DIR);
+
+  // mv existing styles and rename to prev
+  shell.mv(
+    `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
+    `${STYLES_DIR}/styles-prev${params ? '-' + params : ''}.css`
+  );
+
   // request css from url
   request(url, function(err, res, body) {
     if (err) console.error(`Error fetching styles`);
     // write to file
-    fs.writeFile(PATH_TO_STYLES);
+    fs.writeFile(
+      `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
+      body.toString(),
+      done
+    );
   });
 };
 
-// declare domain - default prod
-let domain = 'http://narvar.com/tracking';
-let filePath = '/';
+const pullSettings = function(done) {
+  // declare domain - default prod
+  let domain =
+    !env || env.startsWith('p')
+      ? 'http://narvar.com/tracking'
+      : env.startsWith('q')
+      ? 'http://tracking-qa01.narvar.qa/tracking'
+      : 'http://tracking-st01.narvar.qa/tracking';
 
-// check for non-prod environment
-if (env && env.startsWith('q')) {
-  domain = 'http://tracking-st01.narvar.com/tracking';
-  filePath += 'qa/';
-} else if (env && env.startsWith('s')) {
-  domain = 'http://tracking-st01.narvar.com/tracking';
-  filePath += 'staging/';
-}
-
-// check for extra params and nest in dirs
-if (params) {
-  //split list of params on &
-  let paramList = params
-    .split('&')
-    // iterate through list, split each value on '=', add split[1] + '/' to filePath
-    .forEach(p => (filePath += p.split('=')[1]) + '/');
-}
-
-// render path to new settings file
-
-// if file is in a non-prod environemnt
-
-// rename most recent to RetailerSetting-prev.json
-shell.mv(
-  `${projectsDir}/${moniker}${filePath}RetailerSetting-current.json`,
-  `${projectsDir}/${moniker}${filePath}RetailerSetting-prev.json`
-);
-
-// nest file in directory by given environment
-// name new file RetailerSetting-current.json
-// write file
-
-// TODO: nest file in directories based on any non-standard locales and/or attributes
-// make dirs
-const PATH_TO_STYLES =
-  PATH_TO_FILE.slice(0, PATH_TO_FILE.indexOf('/config')) + '/styles';
-// create directories
-shell.mkdir('-p', PATH_TO_FILE);
-// create styles directory
-shell.mkdir('-p', PATH_TO_STYLES);
-
-console.log('Getting retailerSettings...');
-
-// get current track page
-request(
-  `${domain}/${moniker}/ups?tracking_numbers=test&locale=${locale || 'en_US'}${
-    params ? '&' + params : ''
-  }`,
-  { encoding: null },
-  function(err, res, body) {
-    if (err) console.error(err);
-    // extract retailerSetting from html string
-    const json = getRetailerSettingsFromHtmlString(body.toString());
-
-    let settings = {};
-    // try to parse json
-    try {
-      // set settings to parsed json
-      settings = JSON.parse(json);
-    } catch (e) {
-      // if json did not parse, end script
-      console.error(`Error: json not found\nFull error: ${e}`);
-    }
-    // if css url exists, download and write to file
-    if (settings.custom) {
-      const cssUrl = settings.custom.css_url;
-    }
-    console.log('Writing File...');
-    // write file
-    fs.writeFile(PATH_TO_FILE, json, err => {
+  console.log(
+    'Getting track page...',
+    `${domain}/${moniker}/ups?tracking_numbers=test&locale=${locale ||
+      'en_US'}${params ? '&' + params : ''}`
+  );
+  request(
+    `${domain}/${moniker}/ups?tracking_numbers=test&locale=${locale ||
+      'en_US'}${params ? '&' + params : ''}`,
+    { encoding: null },
+    function(err, res, body) {
       if (err) console.error(err);
-      console.log('Success:', path);
-    });
-  }
-);
+      // extract retailerSetting from html string
+      const json = getRetailerSettingsFromHtmlString(body.toString());
+
+      console.log('Writing File...');
+      renderFiles(json, function(err) {
+        if (err) console.error('Error writing files:', err);
+        let settings = {};
+        // try to parse json
+        try {
+          // set settings to parsed json
+          settings = JSON.parse(json);
+        } catch (e) {
+          // if json did not parse, end script
+          console.error(`Error: invalid json: ${e}`);
+        }
+        // if css url exists, download and write to file
+        if (settings.custom && settings.custom.css_url) {
+          const cssUrl = settings.custom.css_url;
+          getStyles(cssUrl, done);
+        } else {
+          done(null);
+        }
+      });
+    }
+  );
+};
+
+pullSettings(function(err) {
+  if (err) console.error('Error writing files:', err);
+
+  shell.cd(RETAILER_DIR);
+  shell.exec('git init');
+  shell.exec('git add *');
+  const currentTime = new Date();
+  currentTime.setHours(currentTime.getHours() - 8);
+  shell.exec(
+    `git commit -m "Updated settings: ${currentTime
+      .toUTCString()
+      .replace(' GMT', '')}"`
+  );
+
+  console.log(
+    'Success:',
+    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`
+  );
+});
