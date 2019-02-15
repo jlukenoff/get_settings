@@ -5,6 +5,22 @@
  * O: write a json file with RetailerSetting_<datestring>.json of current prod retailerSettings
  * C: Parsing retailerSetting from html string
  * E:
+ *
+ * Pseudo-code:
+ *
+ * get cli args
+ * create directories
+ *  create config directory
+ *  create styles directory
+ * if a config exists in dir
+ *  mv config and rename to prev
+ * make request for track page
+ *  parse json and extract css_url if exists
+ *  get css
+ *    rename existing to prev
+ *    write to styles directory
+ *  write json config to file
+ *  commit changes
  */
 
 // Modules
@@ -12,8 +28,46 @@ const fs = require('fs');
 const request = require('request');
 const shell = require('shelljs');
 
-// get cli args
+// Config
+const { PROJECTS_DIR } = require('./config.json');
+
+// Get CLI Args
 const [moniker, env, locale, params] = process.argv.slice(2);
+
+// render paths
+const RETAILER_DIR = `${PROJECTS_DIR}/${moniker}`;
+
+const SUB_DIR =
+  !env || env.startsWith('p') ? '' : env.startsWith('q') ? '/qa' : '/staging';
+
+const CONFIG_DIR = `${RETAILER_DIR}/config${SUB_DIR}`;
+const STYLES_DIR = `${RETAILER_DIR}/styles${SUB_DIR}`;
+
+console.log('Making Directories...');
+
+// make directories
+shell.mkdir('-p', CONFIG_DIR);
+
+const renderFiles = function(json, done) {
+  // mv config and rename to prev
+  shell.mv(
+    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`,
+    `${CONFIG_DIR}/RetailerSettings-prev${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`
+  );
+
+  // write JSON to file
+  fs.writeFile(
+    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`,
+    json,
+    done
+  );
+};
 
 // function to extract retailerSetting from html string
 const getRetailerSettingsFromHtmlString = function(string) {
@@ -28,62 +82,94 @@ const getRetailerSettingsFromHtmlString = function(string) {
     .slice(0, -1);
 };
 
-const getStyles = function(url) {
+const getStyles = function(url, done) {
+  console.log('Getting Styles...');
+
+  shell.mkdir('-p', STYLES_DIR);
+
+  // mv existing styles and rename to prev
+  shell.mv(
+    `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
+    `${STYLES_DIR}/styles-prev${params ? '-' + params : ''}.css`
+  );
+
   // request css from url
-  // write to file
+  request(url, function(err, res, body) {
+    if (err) console.error(`Error fetching styles`);
+    // write to file
+    fs.writeFile(
+      `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
+      body.toString(),
+      done
+    );
+  });
 };
 
-const getDomain = function(env) {
-  const domains = [
-    'http://narvar.com/tracking',
-    'http://tracking-qa01.narvar.qa/tracking',
-    'http://tracking-st01.narvar.qa/tracking',
-  ];
+const pullSettings = function(done) {
+  // declare domain - default prod
+  let domain =
+    !env || env.startsWith('p')
+      ? 'http://narvar.com/tracking'
+      : env.startsWith('q')
+      ? 'http://tracking-qa01.narvar.qa/tracking'
+      : 'http://tracking-st01.narvar.qa/tracking';
 
-  if (!env || env.startsWith('prod')) {
-    return domains[0];
-  } else if (env === 'qa') {
-    return domains[1];
-  } else if (env.startsWith('stag')) {
-    return domains[2];
-  }
-};
-
-const date = new Date();
-date.setHours(date.getHours() - 8);
-
-// render path to new settings file
-const path = `/Users/johnlukenoff/Desktop/Projects/${moniker}/config/RetailerSetting_${date
-  .toUTCString()
-  .replace(/[\s,]/g, '')
-  .slice(0, -1)}${!env || env.startsWith('prod') ? '' : '-' + env}.json`;
-
-// TODO: nest file in directories based on any non-standard locales and or attributes
-// make dirs
-shell.mkdir('-p', `/Users/johnlukenoff/Desktop/Projects/${moniker}/config`);
-
-console.log('Getting retailerSettings...');
-
-// get current track page
-request(
-  `${getDomain(env)}/${moniker}/ups?trackingnumbers=test&locale=${locale ||
-    'en_US'}${params ? '&' + params : ''}`,
-  { encoding: null },
-  function(err, res, body) {
-    if (err) console.error(err);
-    // extract retailerSetting from html string
-    const json = getRetailerSettingsFromHtmlString(body.toString());
-    // TODO: add try/catch in case json did not exist in html string, handle failure response in catch
-    const settings = JSON.parse(json);
-    if (settings.custom) {
-      const cssUrl = settings.custom.css_url;
-      console.log('cssUrl:', cssUrl);
-    }
-    console.log('Writing File...');
-    // write file
-    fs.writeFile(path, json, err => {
+  console.log(
+    'Getting track page...',
+    `${domain}/${moniker}/ups?tracking_numbers=test&locale=${locale ||
+      'en_US'}${params ? '&' + params : ''}`
+  );
+  request(
+    `${domain}/${moniker}/ups?tracking_numbers=test&locale=${locale ||
+      'en_US'}${params ? '&' + params : ''}`,
+    { encoding: null },
+    function(err, res, body) {
       if (err) console.error(err);
-      console.log('Success:', path);
-    });
-  }
-);
+      // extract retailerSetting from html string
+      const json = getRetailerSettingsFromHtmlString(body.toString());
+
+      console.log('Writing File...');
+      renderFiles(json, function(err) {
+        if (err) console.error('Error writing files:', err);
+        let settings = {};
+        // try to parse json
+        try {
+          // set settings to parsed json
+          settings = JSON.parse(json);
+        } catch (e) {
+          // if json did not parse, end script
+          console.error(`Error: invalid json: ${e}`);
+        }
+        // if css url exists, download and write to file
+        if (settings.custom && settings.custom.css_url) {
+          const cssUrl = settings.custom.css_url;
+          getStyles(cssUrl, done);
+        } else {
+          done(null);
+        }
+      });
+    }
+  );
+};
+
+pullSettings(function(err) {
+  if (err) console.error('Error writing files:', err);
+
+  shell.cd(RETAILER_DIR);
+  shell.exec('git init');
+  shell.exec('git add *');
+  const currentTime = new Date();
+  currentTime.setHours(currentTime.getHours() - 8);
+  shell.exec(
+    `git commit -m "Updated settings: ${currentTime
+      .toUTCString()
+      .replace(' GMT', '')}"`
+  );
+
+  console.log(
+    'Success:',
+    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+      params ? '-' + params : ''
+    }.json`
+  );
+});
