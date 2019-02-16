@@ -152,7 +152,7 @@ const pullSettings = function(done) {
   );
 };
 
-pullSettings(function(err) {
+const commitChanges = function(err) {
   if (err) console.error('Error writing files:', err);
 
   shell.cd(RETAILER_DIR);
@@ -172,4 +172,6 @@ pullSettings(function(err) {
       params ? '-' + params : ''
     }.json`
   );
-});
+};
+
+pullSettings(commitChanges);
