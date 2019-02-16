@@ -1,6 +1,6 @@
 # Narvar Retailer Settings/Stylesheet script
 
-> A command line script that pulls current retailer configurations and stylesheets from live Narvar track pages, then writes to files locally, initialized a local git repo, and commits the changes with a timestamp.
+### A command line NodeJS script that pulls current retailer configurations and stylesheets from live Narvar track pages, then writes to files locally, initialized a local git repo, and commits the changes with a timestamp.
 
 ## Related Projects
 
