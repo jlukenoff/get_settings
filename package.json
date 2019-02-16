@@ -8,6 +8,9 @@
   },
   "keywords": [],
   "author": "",
+  "bin": {
+    "get_settings": "index.js"
+  },
   "license": "ISC",
   "dependencies": {
     "request": "^2.88.0",
