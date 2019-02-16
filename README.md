@@ -1,6 +1,6 @@
 # Narvar Retailer Settings/Stylesheet script
 
-### A command line NodeJS script that pulls current retailer configurations and stylesheets from live Narvar track pages, then writes to files locally, initialized a local git repo, and commits the changes with a timestamp.
+### A command line NodeJS script that pulls current retailer configurations and stylesheets from live Narvar track pages, then writes to files locally, initializes a local git repo, and commits the changes with a timestamp.
 
 ## Related Projects
 
@@ -19,7 +19,7 @@
 The script accepts 4 arguments, only retailer_moniker is required: `get_settings <retailer_moniker> <environment> <locale> <parameters>`
 
 - retailer_moniker (required): The retailer moniker that is used in the URL (i.e. https://narvar.com/tracking/<retailer_moniker>)
-- environment (optional): The Narvar environment in which the track page is hosted (i.e. 'prod', 'qa', 'staging') (default: 'prod')
+- environment (optional): The Narvar environment in which desired track page is hosted (i.e. 'prod', 'qa', 'staging') (default: 'prod')
 - locale (optional): The ISO locale representation of the desired track page locale (i.e. en_GB, es_US, fr_CA) (default: 'en_US')
 - parameters (optional): A string of additional parameters to append to the URL (i.e. 'category=womens&preview=true&version=13.0&order=1234') (default: null)
 
@@ -39,7 +39,7 @@ npm install
 ### Now you will need to configure which path the script should use to write files to:
 
 - Open the `config.json` file in the root directory of the repo.
-- Change the `PROJECTS_DIR` value to the absolute path of the folder where you would like the files to be written
+- Change the `PROJECTS_DIR` value to the absolute path of the folder where you would like the files to be written - Important: DO NOT end this path with a slash (`/`), this will break the script
 - Save and Exit
 
 ### This is not a necessary step but I recommend adding this alias to your .bash_aliases for ease of use, this can be done from the terminal like so:
