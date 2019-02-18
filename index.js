@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Script to pull current RetailerSettings from track pages
  *
@@ -16,10 +18,10 @@
  *  mv config and rename to prev
  * make request for track page
  *  parse json and extract css_url if exists
+ *  write json config to file
  *  get css
  *    rename existing to prev
  *    write to styles directory
- *  write json config to file
  *  commit changes
  */
 
@@ -34,7 +36,7 @@ const { PROJECTS_DIR } = require('./config.json');
 // Get CLI Args
 const [moniker, env, locale, params] = process.argv.slice(2);
 
-// render paths
+// Render Paths
 const RETAILER_DIR = `${PROJECTS_DIR}/${moniker}`;
 
 const SUB_DIR =

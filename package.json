@@ -9,11 +9,20 @@
   "keywords": [],
   "author": "",
   "bin": {
-    "get_settings": "index.js"
+    "get-settings": "./index.js"
   },
   "license": "ISC",
   "dependencies": {
     "request": "^2.88.0",
     "shelljs": "^0.8.3"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jlukenoff/get_settings.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jlukenoff/get_settings/issues"
+  },
+  "homepage": "https://github.com/jlukenoff/get_settings#readme"
 }
