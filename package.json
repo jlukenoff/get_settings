@@ -1,7 +1,7 @@
 {
   "name": "get_settings",
   "version": "1.0.0",
-  "description": "> A command line script that pulls current retailer configurations and stylesheets from live Narvar track pages, then writes to files locally, initialized a local git repo, and commits the changes with a timestamp.",
+  "description": "A command line script that pulls current retailer configurations and stylesheets from live Narvar track pages, then writes to files locally, initialized a local git repo, and commits the changes with a timestamp.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
