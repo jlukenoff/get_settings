@@ -16,7 +16,7 @@
 
 ## Usage
 
-The script accepts 4 arguments, only retailer_moniker is required: `get_settings <retailer_moniker> <environment> <locale> <parameters>`
+The script accepts 4 arguments, only retailer_moniker is required: `get-settings <retailer_moniker> <environment> <locale> <parameters>`
 
 - retailer_moniker (required): The retailer moniker that is used in the URL (i.e. `https://narvar.com/tracking/<retailer_moniker>`)
 - environment (optional): The Narvar environment in which desired track page is hosted (i.e. prod, qa, staging) (default: prod)
@@ -30,7 +30,7 @@ The script accepts 4 arguments, only retailer_moniker is required: `get_settings
 
 ## Set up Instructions
 
-### From the root directory:
+### From the root directory of the repo:
 
 ```
 npm install
@@ -41,4 +41,5 @@ npm link
 
 - Open the `config.json` file in the root directory of the repo.
 - Change the `PROJECTS_DIR` value to the absolute path of the folder where you would like the files to be written - Important: DO NOT end this path with a slash (`/`), this will break the script
+- Change any other configurations at this time like whether the script should use git and whether it should pull the custom stylesheet each time (`should_use_git` and `should_get_styles`)
 - Save and Exit

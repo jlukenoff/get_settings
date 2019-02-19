@@ -31,7 +31,11 @@ const request = require('request');
 const shell = require('shelljs');
 
 // Config
-const { PROJECTS_DIR } = require('./config.json');
+const {
+  PROJECTS_DIR,
+  should_use_git: shouldUseGit,
+  should_get_styles: shouldGetStyles,
+} = require('./config.json');
 
 // Get CLI Args
 const [moniker, env, locale, params] = process.argv.slice(2);
@@ -85,26 +89,28 @@ const getRetailerSettingsFromHtmlString = function(string) {
 };
 
 const getStyles = function(url, done) {
-  console.log('Getting Styles...');
+  if (shouldGetStyles) {
+    console.log('Getting Styles...');
 
-  shell.mkdir('-p', STYLES_DIR);
+    shell.mkdir('-p', STYLES_DIR);
 
-  // mv existing styles and rename to prev
-  shell.mv(
-    `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
-    `${STYLES_DIR}/styles-prev${params ? '-' + params : ''}.css`
-  );
-
-  // request css from url
-  request(url, function(err, res, body) {
-    if (err) console.error(`Error fetching styles`);
-    // write to file
-    fs.writeFile(
+    // mv existing styles and rename to prev
+    shell.mv(
       `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
-      body.toString(),
-      done
+      `${STYLES_DIR}/styles-prev${params ? '-' + params : ''}.css`
     );
-  });
+
+    // request css from url
+    request(url, function(err, res, body) {
+      if (err) console.error(`Error fetching styles`);
+      // write to file
+      fs.writeFile(
+        `${STYLES_DIR}/styles-current${params ? '-' + params : ''}.css`,
+        body.toString(),
+        done
+      );
+    });
+  }
 };
 
 const pullSettings = function(done) {
@@ -156,17 +162,18 @@ const pullSettings = function(done) {
 
 const commitChanges = function(err) {
   if (err) console.error('Error writing files:', err);
-
-  shell.cd(RETAILER_DIR);
-  shell.exec('git init');
-  shell.exec('git add *');
-  const currentTime = new Date();
-  currentTime.setHours(currentTime.getHours() - 8);
-  shell.exec(
-    `git commit -m "Updated settings: ${currentTime
-      .toUTCString()
-      .replace(' GMT', '')}"`
-  );
+  if (shouldUseGit) {
+    shell.cd(RETAILER_DIR);
+    shell.exec('git init');
+    shell.exec('git add *');
+    const currentTime = new Date();
+    currentTime.setHours(currentTime.getHours() - 8);
+    shell.exec(
+      `git commit -m "Updated settings: ${currentTime
+        .toUTCString()
+        .replace(' GMT', '')}"`
+    );
+  }
 
   console.log(
     'Success:',

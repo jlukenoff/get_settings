@@ -1,3 +1,5 @@
 {
-  "PROJECTS_DIR": "/Users/johnlukenoff/Desktop/Projects"
+  "PROJECTS_DIR": "/Users/johnlukenoff/Desktop/Projects",
+  "should_use_git": true,
+  "should_get_styles": true
 }
