@@ -62,9 +62,9 @@ shell.mkdir('-p', CONFIG_DIR);
 const renderFiles = function(json, done) {
   // mv config and rename to prev
   shell.mv(
-    `${CONFIG_DIR}/RetailerSettings-current${locale && locale !== 'en_US' ? '_' + locale : ''}${
-      params ? '-' + params : ''
-    }.json`,
+    `${CONFIG_DIR}/RetailerSettings-current${
+      locale && locale !== 'en_US' ? '_' + locale : ''
+    }${params ? '-' + params : ''}.json`,
     `${CONFIG_DIR}/RetailerSettings-prev${locale ? '_' + locale : ''}${
       params ? '-' + params : ''
     }.json`
@@ -140,19 +140,19 @@ const pullSettings = function(done) {
       if (err) console.error(err);
       // extract retailerSetting from html string
       const json = getRetailerSettingsFromHtmlString(body.toString());
-
+      // declare variable to store config object
+      let settings = {};
+      // try to parse json
+      try {
+        // set settings to parsed json
+        settings = JSON.parse(json);
+      } catch (e) {
+        // if json did not parse, end script
+        console.error(`Error: invalid json: ${e}`);
+        process.exit(1);
+      }
       console.log('Writing File...');
-      renderFiles(json, function(err) {
-        if (err) console.error('Error writing files:', err);
-        let settings = {};
-        // try to parse json
-        try {
-          // set settings to parsed json
-          settings = JSON.parse(json);
-        } catch (e) {
-          // if json did not parse, end script
-          console.error(`Error: invalid json: ${e}`);
-        }
+      renderFiles(JSON.stringify(settings, null, 2), function(err) {
         // if css url exists, download and write to file
         if (settings.custom && settings.custom.css_url) {
           const cssUrl = settings.custom.css_url;
