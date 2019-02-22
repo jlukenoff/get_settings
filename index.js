@@ -40,6 +40,11 @@ const {
 // Get CLI Args
 const [moniker, env, locale, params] = process.argv.slice(2);
 
+if (!moniker) {
+  console.error(`Error: please pass a valid retailerMoniker`);
+  process.exit(1);
+}
+
 // Render Paths
 const RETAILER_DIR = `${PROJECTS_DIR}/${moniker}`;
 
@@ -57,7 +62,7 @@ shell.mkdir('-p', CONFIG_DIR);
 const renderFiles = function(json, done) {
   // mv config and rename to prev
   shell.mv(
-    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
+    `${CONFIG_DIR}/RetailerSettings-current${locale && locale !== 'en_US' ? '_' + locale : ''}${
       params ? '-' + params : ''
     }.json`,
     `${CONFIG_DIR}/RetailerSettings-prev${locale ? '_' + locale : ''}${
@@ -164,15 +169,30 @@ const commitChanges = function(err) {
   if (err) console.error('Error writing files:', err);
   if (shouldUseGit) {
     shell.cd(RETAILER_DIR);
-    shell.exec('git init');
-    shell.exec('git add *');
-    const currentTime = new Date();
-    currentTime.setHours(currentTime.getHours() - 8);
-    shell.exec(
-      `git commit -m "Updated settings: ${currentTime
-        .toUTCString()
-        .replace(' GMT', '')}"`
-    );
+    const isInitialized = shell.exec('git status');
+    if (isInitialized.code !== 0) {
+      shell.exec('git init');
+      fs.writeFile(`${RETAILER_DIR}/.gitignore`, '.*', err => {
+        if (err) console.error(`Error intializing git repo`);
+        shell.exec('git add *');
+        const currentTime = new Date();
+        currentTime.setHours(currentTime.getHours() - 8);
+        shell.exec(
+          `git commit -m "Updated settings: ${currentTime
+            .toUTCString()
+            .replace(' GMT', '')}"`
+        );
+      });
+    } else {
+      shell.exec('git add *');
+      const currentTime = new Date();
+      currentTime.setHours(currentTime.getHours() - 8);
+      shell.exec(
+        `git commit -m "Updated settings: ${currentTime
+          .toUTCString()
+          .replace(' GMT', '')}"`
+      );
+    }
   }
 
   console.log(
