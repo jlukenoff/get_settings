@@ -3,10 +3,10 @@
 /**
  * Script to pull current RetailerSettings from track pages
  *
- * I: retailerMoniker
- * O: write a json file with RetailerSetting_<datestring>.json of current prod retailerSettings
+ * I: retailerMoniker, environment, locale, querystring
+ * O: write a json file named RetailerSetting_current.json of current retailerSettings
  * C: Parsing retailerSetting from html string
- * E:
+ * E: Non-existent track page, invalid querystring
  *
  * Pseudo-code:
  *
@@ -25,16 +25,20 @@
  *  commit changes
  */
 
+// TODO: clean up code and fix continuous callback hell
+
 // Modules
 const fs = require('fs');
 const request = require('request');
 const shell = require('shelljs');
+const readline = require('readline-sync');
 
 // Config
 const {
   PROJECTS_DIR,
   should_use_git: shouldUseGit,
   should_get_styles: shouldGetStyles,
+  text_editor_shell_cmd: openCmd,
 } = require('./config.json');
 
 // Get CLI Args
@@ -54,6 +58,14 @@ const SUB_DIR =
 const CONFIG_DIR = `${RETAILER_DIR}/config${SUB_DIR}`;
 const STYLES_DIR = `${RETAILER_DIR}/styles${SUB_DIR}`;
 
+const PATH_TO_CURR = `${CONFIG_DIR}/RetailerSettings-current${
+  locale && locale !== 'en_US' ? '_' + locale : ''
+}${params ? '-' + params : ''}.json`;
+
+const PATH_TO_PREV = `${CONFIG_DIR}/RetailerSettings-prev${
+  locale && locale !== 'en_US' ? '_' + locale : ''
+}${params ? '-' + params : ''}.json`;
+
 console.log('Making Directories...');
 
 // make directories
@@ -61,23 +73,10 @@ shell.mkdir('-p', CONFIG_DIR);
 
 const renderFiles = function(json, done) {
   // mv config and rename to prev
-  shell.mv(
-    `${CONFIG_DIR}/RetailerSettings-current${
-      locale && locale !== 'en_US' ? '_' + locale : ''
-    }${params ? '-' + params : ''}.json`,
-    `${CONFIG_DIR}/RetailerSettings-prev${locale ? '_' + locale : ''}${
-      params ? '-' + params : ''
-    }.json`
-  );
+  shell.mv(PATH_TO_CURR, PATH_TO_PREV);
 
   // write JSON to file
-  fs.writeFile(
-    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
-      params ? '-' + params : ''
-    }.json`,
-    json,
-    done
-  );
+  fs.writeFile(PATH_TO_CURR, json, done);
 };
 
 // function to extract retailerSetting from html string
@@ -165,7 +164,14 @@ const pullSettings = function(done) {
   );
 };
 
-const commitChanges = function(err) {
+const openOrEnd = function() {
+  const shouldOpenFile = readline.keyInYN('Open in text editor?');
+  if (shouldOpenFile) shell.exec(`${openCmd} ${PATH_TO_CURR}`);
+  console.log('Success:', PATH_TO_CURR);
+};
+
+// FIXME: Any way to avoid callback hell here?
+const commitChanges = function(err, done) {
   if (err) console.error('Error writing files:', err);
   if (shouldUseGit) {
     shell.cd(RETAILER_DIR);
@@ -194,13 +200,8 @@ const commitChanges = function(err) {
       );
     }
   }
-
-  console.log(
-    'Success:',
-    `${CONFIG_DIR}/RetailerSettings-current${locale ? '_' + locale : ''}${
-      params ? '-' + params : ''
-    }.json`
-  );
+  //ask user to open text editor or end
+  openOrEnd();
 };
 
 pullSettings(commitChanges);

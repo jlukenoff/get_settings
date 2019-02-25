@@ -1,5 +1,6 @@
 {
   "PROJECTS_DIR": "/Users/johnlukenoff/Desktop/Projects",
   "should_use_git": true,
-  "should_get_styles": true
+  "should_get_styles": true,
+  "text_editor_shell_cmd": "code"
 }
