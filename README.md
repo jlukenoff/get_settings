@@ -37,9 +37,15 @@ npm install
 npm link
 ```
 
-### Configure which path the script should write files to:
+### Configuration
 
-- Open the `config.json` file in the root directory of the repo.
-- Change the `PROJECTS_DIR` value to the absolute path of the folder where you would like the files to be written - Important: DO NOT end this path with a slash (`/`), this will break the script
-- Change any other configurations at this time like whether the script should use git and whether it should pull the custom stylesheet each time (`should_use_git` and `should_get_styles`)
-- Save and Exit
+- The `config.json` file is the source for any configurations that can be made to the script
+
+| Property                | Description                                                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PROJECTS_DIR`          | String - The file path to use when writing new configuration updates. Important: DO NOT end this path with a `/`, this will break the script |
+| `should_use_git`        | Boolean - whether or not the script should use git for version control                                                                       |
+| `should_get_styles`     | Boolean - whether or not the script should pull the custom stylesheet for the page                                                           |
+| `text_editor_shell_cmd` | String - the command to be used in the terminal to open a file in the text editor (i.e. `code <file name>`)                                  |
+
+---
